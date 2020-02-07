@@ -4,9 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/pretty"
 	v1 "k8s.io/api/apps/v1"
-	asv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -61,7 +62,7 @@ func GetAllNS() ([]string, error) {
 	return result, nil
 }
 
-func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []model.CronHPAV1, err error) {
+func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []model.KemtV1, err error) {
 	logrus.Debugln("== getting CRDs ==")
 	crdClient := dynClient.Resource(crd)
 	ls, err := crdClient.Namespace(namespace).List(metav1.ListOptions{})
@@ -70,14 +71,14 @@ func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []mode
 		return
 	}
 
-	result = make([]model.CronHPAV1, len(ls.Items))
+	result = make([]model.KemtV1, len(ls.Items))
 	for i, entry := range ls.Items {
 		b, err := entry.MarshalJSON()
 		if err != nil {
 			logrus.Errorln(err)
 			continue
 		}
-		cs := model.CronHPAV1{}
+		cs := model.KemtV1{}
 		err = json.Unmarshal(b, &cs)
 		if err != nil {
 			logrus.Errorln(err)
@@ -85,6 +86,20 @@ func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []mode
 		result[i] = cs
 	}
 	return
+}
+
+func GetEvents(ns string) {
+	logrus.Debugln("== getting events ==")
+	w, err := clientset.CoreV1().Events(ns).Watch(metav1.ListOptions{})
+	if err != nil {
+		logrus.Errorln(err)
+		return
+	}
+	for e := range w.ResultChan() {
+		b, _ := json.Marshal(e)
+		logrus.Println(string(pretty.Pretty(b)))
+	}
+
 }
 
 func GetDeployment(ns, name string) (deployment *v1.Deployment, err error) {
@@ -100,25 +115,5 @@ func GetDeployment(ns, name string) (deployment *v1.Deployment, err error) {
 func UpdateDeployment(deployment *v1.Deployment) (err error) {
 	logrus.Debugln("== update deployment ==")
 	_, err = clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment)
-	return
-}
-
-func GetHPA(ns, name string) (hpa *asv1.HorizontalPodAutoscaler, err error) {
-	logrus.Debugln("== getting HPA ==")
-	hpa, err = clientset.AutoscalingV1().HorizontalPodAutoscalers(ns).Get(name, metav1.GetOptions{})
-	if err != nil {
-		logrus.Errorln(err)
-		return
-	}
-	return
-}
-
-func UpdateHPA(ns string, hpa *asv1.HorizontalPodAutoscaler) (err error) {
-	logrus.Debugln("== updating HPA ==")
-	_, err = clientset.AutoscalingV1().HorizontalPodAutoscalers(ns).Update(hpa)
-	if err != nil {
-		logrus.Errorln(err)
-		return
-	}
 	return
 }

@@ -8,12 +8,12 @@ var KemtV1CRDSchema = schema.GroupVersionResource{
 	Resource: "kempts",
 }
 
-type KempV1 struct {
+type KemtV1 struct {
 	Metadata MetadataV1 `json:"metadata"`
 	Spec     SpecV1     `json:"spec"`
 }
 
-func (i KempV1) GetID() string {
+func (i KemtV1) GetID() string {
 	return "kemtV1." + "TODO" //TODO: implement
 }
 
