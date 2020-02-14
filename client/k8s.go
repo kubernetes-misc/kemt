@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/pretty"
 	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -15,6 +14,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 var clientset *kubernetes.Clientset
@@ -88,6 +89,43 @@ func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []mode
 	return
 }
 
+type Event struct {
+	EventType string `json:"Type"`
+	Object    Object `json:"Object"`
+}
+
+func (e Event) ToString() string {
+	oc, _ := time.LoadLocation("Africa/Johannesburg")
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", e.Object.LastTimestamp.In(oc), e.EventType, pad(e.Object.Reason, 20), pad(fmt.Sprintf("%s/%s", strings.ToLower(e.Object.InvolvedObject.Kind), e.Object.InvolvedObject.Name), 35), e.Object.Message)
+}
+
+func pad(in string, size int) string {
+	for len(in) < size {
+		in += " "
+	}
+	return in
+}
+
+type Metadata struct {
+	UID string `json:"uid"`
+}
+
+type Object struct {
+	Metadata       Metadata       `json:"metadata"`
+	InvolvedObject InvolvedObject `json:"involvedObject"`
+	Reason         string         `json:"reason"`
+	Message        string         `json:"message"`
+	Type           string         `json:"type"`
+	Count          int            `json:"count"`
+	LastTimestamp  time.Time      `json:"lastTimeStamp"`
+}
+
+type InvolvedObject struct {
+	Kind      string `json:"kind"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
 func GetEvents(ns string) {
 	logrus.Debugln("== getting events ==")
 	w, err := clientset.CoreV1().Events(ns).Watch(metav1.ListOptions{})
@@ -97,7 +135,20 @@ func GetEvents(ns string) {
 	}
 	for e := range w.ResultChan() {
 		b, _ := json.Marshal(e)
-		logrus.Println(string(pretty.Pretty(b)))
+		//logrus.Println(string(pretty.Pretty(b)))
+		e := Event{}
+		err := json.Unmarshal(b, &e)
+		if err != nil {
+			logrus.Errorln(err)
+			continue
+		}
+		//newB, err := json.Marshal(e)
+		//if err != nil {
+		//	logrus.Errorln(err)
+		//	continue
+		//}
+		//logrus.Println(string(pretty.Pretty(newB)))
+		logrus.Println(e.ToString())
 	}
 
 }
