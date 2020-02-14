@@ -11,17 +11,13 @@ import (
 
 type TeamsClient struct {
 	MaxMessages    int
-	MaxWaitSeconds string
+	MaxWaitSeconds int
 	Endpoint       string
 	in             chan string
 }
 
 func (t *TeamsClient) Start() {
-	duration, err := time.ParseDuration(t.MaxWaitSeconds)
-	if err != nil {
-		logrus.Errorln(err)
-		return
-	}
+	duration := time.Duration(t.MaxWaitSeconds) * time.Second
 	go func() {
 		count := 0
 		msg := Webhook{ThemeColor: "#dddddd"}

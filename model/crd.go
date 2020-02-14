@@ -13,8 +13,8 @@ type KemtV1 struct {
 	Spec     SpecV1     `json:"spec"`
 }
 
-func (i KemtV1) GetID() string {
-	return "kemtV1." + "TODO" //TODO: implement
+func (k KemtV1) ID() string {
+	return "kemtv1-" + k.Metadata.Namespace + "-" + k.Metadata.Name
 }
 
 type MetadataV1 struct {

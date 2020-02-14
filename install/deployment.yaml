@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kemt
+  namespace: kemt
+spec:
+  selector:
+    matchLabels:
+      app: kemt
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: kemt
+    spec:
+      serviceAccountName: kemt-svc-acc
+      containers:
+        - env:
+            - name: authInCluster
+              value: "true"
+          image: kubernetesmisc/kemt:latest
+          imagePullPolicy: Always
+          name: kemt
+          resources:
+            limits:
+              cpu: 500m
+              memory: 64Mi
+            requests:
+              cpu: 500m
+              memory: 64Mi

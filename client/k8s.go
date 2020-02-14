@@ -11,8 +11,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -22,25 +24,35 @@ var clientset *kubernetes.Clientset
 var dynClient dynamic.Interface
 
 func BuildClient() (err error) {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
+	var config *rest.Config
 
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		logrus.Errorln(err)
-		return
+	authInCluster := os.Getenv("authInCluster")
+	if authInCluster == "true" {
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			logrus.Errorln("could not auth in cluster")
+			panic(err.Error())
+		}
+	} else {
+		var kubeconfig *string
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+		flag.Parse()
+		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			logrus.Errorln(err)
+			return
+		}
 	}
+
 	clientset, err = kubernetes.NewForConfig(config)
 	if err != nil {
 		logrus.Errorln(err)
 		return
 	}
-
 	dynClient, err = dynamic.NewForConfig(config)
 	if err != nil {
 		logrus.Errorln(fmt.Sprintf("Error received creating client %v", err))
@@ -126,31 +138,28 @@ type InvolvedObject struct {
 	Namespace string `json:"namespace"`
 }
 
-func GetEvents(ns string) {
-	logrus.Debugln("== getting events ==")
-	w, err := clientset.CoreV1().Events(ns).Watch(metav1.ListOptions{})
-	if err != nil {
-		logrus.Errorln(err)
-		return
-	}
-	for e := range w.ResultChan() {
-		b, _ := json.Marshal(e)
-		//logrus.Println(string(pretty.Pretty(b)))
-		e := Event{}
-		err := json.Unmarshal(b, &e)
+func GetEvents(ns string) chan Event {
+	result := make(chan Event)
+	go func() {
+		logrus.Debugln("== getting events ==")
+		w, err := clientset.CoreV1().Events(ns).Watch(metav1.ListOptions{})
 		if err != nil {
 			logrus.Errorln(err)
-			continue
+			return
 		}
-		//newB, err := json.Marshal(e)
-		//if err != nil {
-		//	logrus.Errorln(err)
-		//	continue
-		//}
-		//logrus.Println(string(pretty.Pretty(newB)))
-		logrus.Println(e.ToString())
-	}
-
+		for e := range w.ResultChan() {
+			b, _ := json.Marshal(e)
+			e := Event{}
+			err := json.Unmarshal(b, &e)
+			if err != nil {
+				logrus.Errorln(err)
+				continue
+			}
+			result <- e
+		}
+		close(result)
+	}()
+	return result
 }
 
 func GetDeployment(ns, name string) (deployment *v1.Deployment, err error) {
