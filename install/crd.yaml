@@ -33,5 +33,5 @@ spec:
         spec:
           type: object
           properties:
-            secretName:
+            webhook:
               type: string

@@ -23,5 +23,5 @@ type MetadataV1 struct {
 }
 
 type SpecV1 struct {
-	SecretName string `json:"secretName"`
+	WebHook string `json:"webHook"`
 }
