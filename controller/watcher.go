@@ -10,9 +10,10 @@ var watchers = make(map[string]*watcher)
 
 func CreateIfNotExists(item model.KemtV1) {
 	//TODO: support for deleting CRDs
-	_, found := watchers[item.ID()]
+	watcher, found := watchers[item.ID()]
 	if found {
 		logrus.Debugln("already aware of", item.ID())
+		watcher.tc.UpdateEndpoint(item.Spec.WebHook)
 		//TODO: update the info in the CRD
 		return
 	}
@@ -23,18 +24,19 @@ func CreateIfNotExists(item model.KemtV1) {
 
 type watcher struct {
 	stop chan interface{}
+	tc   *client.TeamsClient
 }
 
 func newWatcher(k model.KemtV1) *watcher {
 	r := &watcher{
 		stop: make(chan interface{}),
+		tc:   client.NewTeamsClient(10, 1, k.Spec.WebHook),
 	}
 	c := client.GetEvents(k.Metadata.Namespace)
-	tc := client.NewTeamsClient(10, 1, k.Spec.WebHook)
-	tc.Start()
+	r.tc.Start()
 	go func() {
 		for i := range c {
-			tc.EnqueueMsg(i.ToString())
+			r.tc.EnqueueMsg(i.ToString())
 		}
 	}()
 	return r
