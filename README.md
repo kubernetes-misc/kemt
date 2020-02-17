@@ -10,7 +10,8 @@ Push Kubernetes Events to Microsoft Teams
 - Externalize maxSeconds and maxMessages
 - Code quality checks
 - Version 1 docker image
-- Usage guide
+- User guide
+- Explicit namespace
 
 ### Version 2 - Kubectl commands
 - New CRD
