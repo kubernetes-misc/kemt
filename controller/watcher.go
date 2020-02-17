@@ -9,9 +9,11 @@ import (
 var watchers = make(map[string]*watcher)
 
 func CreateIfNotExists(item model.KemtV1) {
+	//TODO: support for deleting CRDs
 	_, found := watchers[item.ID()]
 	if found {
 		logrus.Debugln("already aware of", item.ID())
+		//TODO: update the info in the CRD
 		return
 	}
 	logrus.Println("> Watching", item.Metadata.Namespace)

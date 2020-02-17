@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -19,10 +20,23 @@ func NewTeamsClient(maxMessages, maxWaitSeconds int, endpoint string) *TeamsClie
 }
 
 type TeamsClient struct {
+	sync.Mutex
 	maxMessages    int
 	maxWaitSeconds int
 	Endpoint       string
 	in             chan string
+}
+
+func (t *TeamsClient) UpdateEndpoint(e string) {
+	t.Lock()
+	t.Endpoint = e
+	t.Unlock()
+}
+
+func (t *TeamsClient) getEndpoint() string {
+	t.Lock()
+	defer t.Unlock()
+	return t.Endpoint
 }
 
 func (t *TeamsClient) Start() {
