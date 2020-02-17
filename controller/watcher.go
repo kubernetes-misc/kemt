@@ -28,7 +28,7 @@ func newWatcher(k model.KemtV1) *watcher {
 		stop: make(chan interface{}),
 	}
 	c := client.GetEvents(k.Metadata.Namespace)
-	tc := client.NewTeamsClient(10, 10, k.Spec.WebHook)
+	tc := client.NewTeamsClient(10, 1, k.Spec.WebHook)
 	tc.Start()
 	go func() {
 		for i := range c {

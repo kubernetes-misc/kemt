@@ -7,7 +7,7 @@ Push Kubernetes Events to Microsoft Teams
 - Update existing if changed
 - Describe decisions in logs
 - Handling dc from kube api?
-- CRD: field name
+- Externalize maxSeconds and maxMessages
 - Code quality checks
 - Version 1 docker image
 - Usage guide
