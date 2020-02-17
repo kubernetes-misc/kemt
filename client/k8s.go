@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -59,20 +58,6 @@ func BuildClient() (err error) {
 		return
 	}
 	return
-}
-
-func GetAllNS() ([]string, error) {
-	logrus.Debugln("== getting namespaces ==")
-	ls, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
-	if err != nil {
-		logrus.Errorln(err)
-		return nil, err
-	}
-	result := make([]string, len(ls.Items))
-	for i, n := range ls.Items {
-		result[i] = n.Name
-	}
-	return result, nil
 }
 
 func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []model.KemtV1, err error) {
@@ -163,20 +148,4 @@ func GetEvents(ns string) chan Event {
 		close(result)
 	}()
 	return result
-}
-
-func GetDeployment(ns, name string) (deployment *v1.Deployment, err error) {
-	logrus.Debugln("== getting deployment ==")
-	deployment, err = clientset.AppsV1().Deployments(ns).Get(name, metav1.GetOptions{})
-	if err != nil {
-		logrus.Errorln(err)
-		return
-	}
-	return
-}
-
-func UpdateDeployment(deployment *v1.Deployment) (err error) {
-	logrus.Debugln("== update deployment ==")
-	_, err = clientset.AppsV1().Deployments(deployment.Namespace).Update(deployment)
-	return
 }
