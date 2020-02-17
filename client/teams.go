@@ -34,7 +34,7 @@ func (t *TeamsClient) Start() {
 		for {
 			select {
 			case line = <-t.in:
-				logrus.Println("Read msg:", line)
+				logrus.Debugln("Read msg:", line)
 				msg.Text += line
 				msg.Text += "<br />"
 				count++
@@ -44,7 +44,7 @@ func (t *TeamsClient) Start() {
 					msg.Text = ""
 				}
 			case <-time.After(duration):
-				logrus.Println("After duration")
+				logrus.Debugln("After duration")
 				if count > 0 {
 					sendSilently(t.Endpoint, msg)
 					count = 0
