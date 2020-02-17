@@ -10,8 +10,8 @@ var watchers = make(map[string]*watcher)
 
 func CreateIfNotExists(item model.KemtV1) {
 	_, found := watchers[item.ID()]
-	if !found {
-		logrus.Println("already aware of", item.ID())
+	if found {
+		logrus.Debugln("already aware of", item.ID())
 		return
 	}
 	logrus.Println("> Watching", item.Metadata.Namespace)
@@ -28,11 +28,7 @@ func newWatcher(k model.KemtV1) *watcher {
 		stop: make(chan interface{}),
 	}
 	c := client.GetEvents(k.Metadata.Namespace)
-	tc := client.TeamsClient{
-		MaxMessages:    10,
-		MaxWaitSeconds: 10,
-		Endpoint:       k.Spec.SecretName,
-	}
+	tc := client.NewTeamsClient(10, 10, k.Spec.SecretName)
 	tc.Start()
 	go func() {
 		for i := range c {

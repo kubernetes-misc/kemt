@@ -26,22 +26,26 @@ func main() {
 	}
 	c := cronV3.New(cronV3.WithSeconds())
 	_, err = c.AddJob(cronSpec, model.Job{
-		F: func() {
-			crds, err := client.GetAllCRD("", model.KemtV1CRDSchema)
-			if err != nil {
-				logrus.Errorln("could not get all CRDs of Kemt V1")
-				logrus.Errorln(err)
-				return
-			}
-			for _, crd := range crds {
-				controller.CreateIfNotExists(crd)
-			}
-		},
+		F: update,
 	})
 	c.Start()
+	update()
 	if err != nil {
 		panic(err)
 	}
 	logrus.SetLevel(logrus.InfoLevel)
 	select {}
+}
+
+func update() {
+	crds, err := client.GetAllCRD("", model.KemtV1CRDSchema)
+	if err != nil {
+		logrus.Errorln("could not get all CRDs of Kemt V1")
+		logrus.Errorln(err)
+		return
+	}
+	for _, crd := range crds {
+		controller.CreateIfNotExists(crd)
+	}
+
 }

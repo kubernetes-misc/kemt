@@ -5,7 +5,7 @@ import "k8s.io/apimachinery/pkg/runtime/schema"
 var KemtV1CRDSchema = schema.GroupVersionResource{
 	Group:    "kubernetes-misc.xyz",
 	Version:  "v1",
-	Resource: "kempts",
+	Resource: "kemts",
 }
 
 type KemtV1 struct {

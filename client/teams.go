@@ -9,15 +9,24 @@ import (
 	"time"
 )
 
+func NewTeamsClient(maxMessages, maxWaitSeconds int, endpoint string) *TeamsClient {
+	return &TeamsClient{
+		maxMessages:    maxMessages,
+		maxWaitSeconds: maxWaitSeconds,
+		Endpoint:       endpoint,
+		in:             make(chan string),
+	}
+}
+
 type TeamsClient struct {
-	MaxMessages    int
-	MaxWaitSeconds int
+	maxMessages    int
+	maxWaitSeconds int
 	Endpoint       string
 	in             chan string
 }
 
 func (t *TeamsClient) Start() {
-	duration := time.Duration(t.MaxWaitSeconds) * time.Second
+	duration := time.Duration(t.maxWaitSeconds) * time.Second
 	go func() {
 		count := 0
 		msg := Webhook{ThemeColor: "#dddddd"}
@@ -25,15 +34,17 @@ func (t *TeamsClient) Start() {
 		for {
 			select {
 			case line = <-t.in:
+				logrus.Println("Read msg:", line)
 				msg.Text += line
 				msg.Text += "<br />"
 				count++
-				if count >= t.MaxMessages {
+				if count >= t.maxMessages {
 					sendSilently(t.Endpoint, msg)
 					count = 0
 					msg.Text = ""
 				}
 			case <-time.After(duration):
+				logrus.Println("After duration")
 				if count > 0 {
 					sendSilently(t.Endpoint, msg)
 					count = 0
@@ -55,6 +66,7 @@ type Webhook struct {
 }
 
 func sendSilently(endpoint string, msg Webhook) {
+	logrus.Println("sending:", endpoint, msg)
 	enc, err := json.Marshal(msg)
 	if err != nil {
 		logrus.Errorln(err)
