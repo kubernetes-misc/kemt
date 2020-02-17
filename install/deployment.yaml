@@ -8,8 +8,6 @@ spec:
     matchLabels:
       app: kemt
   template:
-    metadata:
-      creationTimestamp: null
       labels:
         app: kemt
     spec:
