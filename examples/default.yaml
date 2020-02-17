@@ -1,0 +1,7 @@
+apiVersion: "kubernetes-misc.xyz/v1"
+kind: Kemt
+metadata:
+  name: example
+  namespace: default
+spec:
+  secretName: https://outlook.office.com/webhook/...
