@@ -107,7 +107,10 @@ type Event struct {
 }
 
 func (e Event) ToString() string {
-	oc, _ := time.LoadLocation("Africa/Johannesburg")
+	oc, err := time.LoadLocation("Local")
+	if err != nil {
+		oc, _ = time.LoadLocation("")
+	}
 	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", e.Object.LastTimestamp.In(oc), e.EventType, pad(e.Object.Reason, 20), pad(fmt.Sprintf("%s/%s", strings.ToLower(e.Object.InvolvedObject.Kind), e.Object.InvolvedObject.Name), 35), e.Object.Message)
 }
 
