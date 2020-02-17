@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/pretty"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -57,6 +58,50 @@ func BuildClient() (err error) {
 		logrus.Errorln(fmt.Sprintf("Error received creating client %v", err))
 		return
 	}
+	return
+}
+
+type WrappedKemtV1 struct {
+	Type string
+	Kemt model.KemtV1
+}
+
+func WatchCRD(ns string, crd schema.GroupVersionResource) (err error, out chan WrappedKemtV1) {
+	crdClient := dynClient.Resource(crd)
+	w, err := crdClient.Namespace(ns).Watch(metav1.ListOptions{})
+	if err != nil {
+		logrus.Errorln("could not watch CRD")
+		logrus.Errorln(err)
+		return
+	}
+	out = make(chan WrappedKemtV1, 256)
+	go func() {
+		for r := range w.ResultChan() {
+			logrus.Println("New change to CRD")
+			logrus.Println(r.Type)
+			b, err := json.Marshal(r.Object)
+			if err != nil {
+				logrus.Errorln("could not marshal event.Object")
+				logrus.Errorln(err)
+				continue
+			}
+			item := &model.KemtV1{}
+			err = json.Unmarshal(b, item)
+			if err != nil {
+				logrus.Errorln("could not unmarshal event.Object into model.KemtV1")
+				logrus.Errorln(err)
+				continue
+			}
+			b, _ = json.Marshal(*item)
+			logrus.Println(string(pretty.Pretty(b)))
+			result := WrappedKemtV1{
+				Type: string(r.Type),
+				Kemt: *item,
+			}
+			out <- result
+		}
+
+	}()
 	return
 }
 
