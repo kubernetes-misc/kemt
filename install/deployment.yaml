@@ -8,6 +8,7 @@ spec:
     matchLabels:
       app: kemt
   template:
+    metadata:
       labels:
         app: kemt
     spec:
