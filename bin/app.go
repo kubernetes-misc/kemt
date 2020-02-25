@@ -4,6 +4,7 @@ import (
 	"github.com/kubernetes-misc/kemt/client"
 	"github.com/kubernetes-misc/kemt/controller"
 	"github.com/kubernetes-misc/kemt/model"
+	"github.com/kubernetes-misc/kemt/web"
 	cronV3 "github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	"os"
@@ -34,7 +35,8 @@ func main() {
 		panic(err)
 	}
 	logrus.SetLevel(logrus.InfoLevel)
-	select {}
+
+	web.StartServer(":7000")
 }
 
 func update() {

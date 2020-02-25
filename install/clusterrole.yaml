@@ -29,3 +29,29 @@ subjects:
     kind: ServiceAccount
     name: kemt-svc-acc
     namespace: kemt
+
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: kemt
+  name: kemt-clusterrole-read-all
+rules:
+  - apiGroups: ["", "extensions"]
+    resources: ["deployments", "pods", "services", "logs"]
+    verbs: ["get", "list", "watch" ]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kemt-clusterrole-binding-read-all
+  namespace: kemt
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kemt-clusterrole-read-all
+subjects:
+  - apiGroup: ""
+    kind: ServiceAccount
+    name: kemt-svc-acc
+    namespace: kemt
