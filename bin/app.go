@@ -36,6 +36,19 @@ func main() {
 	}
 	logrus.SetLevel(logrus.InfoLevel)
 
+	err, out := client.WatchCRD("", model.KemtV1CRDSchema)
+	if err != nil {
+		logrus.Errorln("could not watch CRD KemtV1")
+		logrus.Panicln(err)
+	}
+	for o := range out {
+		if o.Type == "ADDED" || o.Type == "UPDATED" {
+			controller.CreateIfNotExists(o.Kemt)
+			continue
+		}
+		logrus.Println("new line", o.Type)
+	}
+
 	web.StartServer(":7000")
 }
 

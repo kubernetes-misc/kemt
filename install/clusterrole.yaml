@@ -8,7 +8,7 @@ automountServiceAccountToken: true
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  namespace: kemt
+  namespace: kemtk
   name: kemt-clusterrole
 rules:
   - apiGroups: ["", "extensions", "kubernetes-misc.xyz"]
