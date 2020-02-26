@@ -1,0 +1,35 @@
+{{define "head"}}
+    <style>
+
+    </style>
+
+    <script>
+        function init() {
+
+            //Get the namespace
+            let $_GET = [];
+            window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (a, name, value) {
+                $_GET[name] = value;
+            })
+            const namespace = $_GET["namespace"]
+
+            //Set the header
+            document.getElementById("h1").innerText = namespace;
+
+            //TODO: open websocket connection
+            //Add
+        }
+
+        setTimeout(() => {
+            init()
+        }, 500)
+    </script>
+
+{{end}}
+
+
+{{define "content"}}
+    <h1 id="h1">loading...</h1>
+
+    <p>to do ...</p>
+{{end}}

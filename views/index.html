@@ -1,0 +1,57 @@
+{{define "head"}}
+    <style>
+
+    </style>
+
+    <script>
+        function loadNamespaces() {
+            const request = new XMLHttpRequest()
+            request.open('GET', document.location.origin + "/api/namespaces", true)
+            request.onload = function () {
+                const m = JSON.parse(request.response)
+                const table = document.getElementById("namespaceTable");
+                const totalRows = table.rows.length
+                for (let i = 1; i < totalRows; i++) {
+                    table.deleteRow(1)
+                }
+                let currentRow = 1
+                for (const namespace of m) {
+                    const row = table.insertRow(currentRow++);
+
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+
+                    cell1.innerHTML = namespace;
+                    cell2.innerHTML = "<a href='/watch?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>watch</a>" +
+                        "&nbsp;<a href='/cli?namespace=" + namespace + "' class='btn btn-sm btn-success animated swing'>cli</a>";
+                }
+
+            }
+            request.send()
+        }
+        setTimeout(() => {
+            loadNamespaces()
+        }, 500)
+    </script>
+{{end}}
+
+
+{{define "content"}}
+    <h1>Namespaces</h1>
+
+    <table id="namespaceTable" class="table table-hover" style="width: 380px">
+        <thead>
+        <tr>
+            <th scope="col">Namespace</th>
+            <th scope="col">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr class="table-default">
+            <td></td>
+            <td></td>
+        </tr>
+        </tbody>
+    </table>
+
+{{end}}

@@ -15,6 +15,7 @@ const DefaultCronSpec = "*/30 * * * * *"
 func main() {
 	logrus.Println("Kubernetes Declarative Teams Integration")
 	logrus.Println("Starting up...")
+	go web.StartServer(":7000")
 
 	err := client.BuildClient()
 	if err != nil {
@@ -48,8 +49,8 @@ func main() {
 		}
 		logrus.Println("new line", o.Type)
 	}
+	select {}
 
-	web.StartServer(":7000")
 }
 
 func update() {

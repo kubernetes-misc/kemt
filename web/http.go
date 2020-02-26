@@ -2,8 +2,9 @@ package web
 
 import (
 	"bytes"
+	"fmt"
+	"github.com/foolin/goview"
 	"github.com/gorilla/websocket"
-	"github.com/sirupsen/logrus"
 	"log"
 	"net/http"
 	"time"
@@ -11,20 +12,42 @@ import (
 
 func StartServer(listenAddr string) {
 
-	hub := newHub()
-	go hub.run()
+	//render index use `index` without `.html` extension, that will render with master layout.
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		err := goview.Render(w, http.StatusOK, "index", goview.M{})
+		if err != nil {
+			fmt.Fprintf(w, "Render index error: %v!", err)
+		}
 
-	fs := http.FileServer(http.Dir("html"))
-
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r)
 	})
-	http.Handle("/", fs)
-	logrus.Infoln("listening on", listenAddr)
-	err := http.ListenAndServe(listenAddr, nil)
-	if err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
+
+	//render page use `page.html` with '.html' will only file template without master layout.
+	http.HandleFunc("/watch", func(w http.ResponseWriter, r *http.Request) {
+		err := goview.Render(w, http.StatusOK, "watch", goview.M{})
+		if err != nil {
+			fmt.Fprintf(w, "Render page.html error: %v!", err)
+		}
+	})
+
+	http.HandleFunc("/api/namespaces", handleAPINamespaces)
+
+	fmt.Println("Listening and serving HTTP on :9090")
+	http.ListenAndServe(listenAddr, nil)
+
+	//hub := newHub()
+	//go hub.run()
+	//
+	//fs := http.FileServer(http.Dir("html"))
+	//
+	//http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	//	serveWs(hub, w, r)
+	//})
+	//http.Handle("/", fs)
+	//logrus.Infoln("listening on", listenAddr)
+	//err := http.ListenAndServe(listenAddr, nil)
+	//if err != nil {
+	//	log.Fatal("ListenAndServe: ", err)
+	//}
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {

@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -64,6 +65,21 @@ func BuildClient() (err error) {
 type WrappedKemtV1 struct {
 	Type string
 	Kemt model.KemtV1
+}
+
+func GetNS() []string {
+	var result []string
+	l, err := clientset.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		logrus.Errorln(err)
+		return result
+	}
+	for _, ns := range l.Items {
+		result = append(result, ns.Name)
+	}
+	sort.Strings(result)
+	return result
+
 }
 
 func WatchCRD(ns string, crd schema.GroupVersionResource) (err error, out chan WrappedKemtV1) {
