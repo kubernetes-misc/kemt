@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/foolin/goview"
 	"github.com/gorilla/websocket"
+	"github.com/kubernetes-misc/kemt/client"
+	"github.com/sirupsen/logrus"
 	"log"
 	"net/http"
 	"time"
@@ -32,22 +34,34 @@ func StartServer(listenAddr string) {
 	http.HandleFunc("/api/namespaces", handleAPINamespaces)
 
 	fmt.Println("Listening and serving HTTP on :9090")
-	http.ListenAndServe(listenAddr, nil)
 
-	//hub := newHub()
-	//go hub.run()
-	//
+	hub := newHub()
+	go hub.run()
+
 	//fs := http.FileServer(http.Dir("html"))
-	//
-	//http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-	//	serveWs(hub, w, r)
-	//})
 	//http.Handle("/", fs)
-	//logrus.Infoln("listening on", listenAddr)
-	//err := http.ListenAndServe(listenAddr, nil)
-	//if err != nil {
-	//	log.Fatal("ListenAndServe: ", err)
-	//}
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		keys, ok := r.URL.Query()["namespace"]
+		if !ok {
+			logrus.Println("no namespace provided")
+			return
+		}
+		if len(keys) != 1 {
+			logrus.Println("expected 1 namespace, not", len(keys))
+		}
+		namespace := keys[0]
+		c := client.GetEvents(namespace)
+		wsClient := serveWs(hub, w, r)
+		for item := range c {
+			wsClient.send <- []byte(item.ToString())
+		}
+	})
+	logrus.Infoln("listening on", listenAddr)
+	err := http.ListenAndServe(listenAddr, nil)
+	if err != nil {
+		log.Fatal("ListenAndServe: ", err)
+	}
 }
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
@@ -197,12 +211,12 @@ func (c *Client) writePump() {
 			}
 			w.Write(message)
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.send)
-			}
+			//// Add queued chat messages to the current websocket message.
+			//n := len(c.send)
+			//for i := 0; i < n; i++ {
+			//	w.Write(newline)
+			//	w.Write(<-c.send)
+			//}
 
 			if err := w.Close(); err != nil {
 				return
@@ -217,11 +231,11 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) *Client {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
-		return
+		return nil
 	}
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
 	client.hub.register <- client
@@ -230,4 +244,5 @@ func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	// new goroutines.
 	go client.writePump()
 	go client.readPump()
+	return client
 }
