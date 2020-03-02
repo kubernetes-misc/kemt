@@ -12,11 +12,17 @@ RUN go mod vendor
 FROM vendor as builder
 COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o app bin/app.go
+RUN mkdir build
+RUN mv app build/app
+RUN mv -f views build/
+RUN ls -la /src/build
 
 
 FROM scratch as final
 COPY --from=builder /user/group /user/passwd /etc/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-COPY --from=builder /src/app /app
+#COPY --from=builder /src/build/app /app
+#COPY --from=builder /src/views /views
+COPY --from=builder /src/build /build
 USER nobody:nobody
-ENTRYPOINT ["/app"]
+ENTRYPOINT ["/build/app"]
