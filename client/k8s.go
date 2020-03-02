@@ -1,12 +1,14 @@
 package client
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/pretty"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -65,6 +67,32 @@ func BuildClient() (err error) {
 type WrappedKemtV1 struct {
 	Type string
 	Kemt model.KemtV1
+}
+
+func GetPods(ns string) []string {
+	result := []string{}
+	ls, err := clientset.CoreV1().Pods(ns).List(metav1.ListOptions{})
+	if err != nil {
+		logrus.Errorln(err)
+		return result
+	}
+	for _, item := range ls.Items {
+		result = append(result, item.Name)
+	}
+	return result
+}
+
+func GetDeployments(ns string) []string {
+	result := []string{}
+	ls, err := clientset.AppsV1().Deployments(ns).List(metav1.ListOptions{})
+	if err != nil {
+		logrus.Errorln(err)
+		return result
+	}
+	for _, item := range ls.Items {
+		result = append(result, item.Name)
+	}
+	return result
 }
 
 func GetNS() []string {
@@ -185,6 +213,33 @@ type InvolvedObject struct {
 	Kind      string `json:"kind"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+}
+
+func GetLogs(ns, item string) chan string {
+	result := make(chan string)
+	go func() {
+
+		s, err := clientset.CoreV1().Pods(ns).GetLogs(item, &v1.PodLogOptions{
+			TypeMeta: metav1.TypeMeta{},
+			Follow:   true,
+		}).Stream()
+		if err != nil {
+			logrus.Errorln(err)
+			close(result)
+			return
+		}
+		rd := bufio.NewReader(s)
+		for {
+			str, err := rd.ReadString('\n')
+			if err != nil {
+				logrus.Errorln("Read Error:", err)
+				return
+			}
+			result <- str
+		}
+
+	}()
+	return result
 }
 
 func GetEvents(ns string) chan Event {

@@ -31,7 +31,17 @@ func StartServer(listenAddr string) {
 		}
 	})
 
+	//render page use `page.html` with '.html' will only file template without master layout.
+	http.HandleFunc("/log", func(w http.ResponseWriter, r *http.Request) {
+		err := goview.Render(w, http.StatusOK, "log", goview.M{})
+		if err != nil {
+			fmt.Fprintf(w, "Render page.html error: %v!", err)
+		}
+	})
+
 	http.HandleFunc("/api/namespaces", handleAPINamespaces)
+	http.HandleFunc("/api/deployments", handleAPIDeployments)
+	http.HandleFunc("/api/pods", handleAPIPods)
 
 	fmt.Println("Listening and serving HTTP on :9090")
 
@@ -42,20 +52,26 @@ func StartServer(listenAddr string) {
 	//http.Handle("/", fs)
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		keys, ok := r.URL.Query()["namespace"]
-		if !ok {
-			logrus.Println("no namespace provided")
-			return
+		namespace := getGetParam(r, "namespace")
+		item := getGetParam(r, "item")
+
+		handleEvents := item == ""
+
+		if handleEvents {
+			c := client.GetEvents(namespace)
+			wsClient := serveWs(hub, w, r)
+			for item := range c {
+				wsClient.send <- []byte(item.ToString())
+			}
+		} else {
+			c := client.GetLogs(namespace, item)
+			wsClient := serveWs(hub, w, r)
+			for item := range c {
+				wsClient.send <- []byte(item)
+			}
+
 		}
-		if len(keys) != 1 {
-			logrus.Println("expected 1 namespace, not", len(keys))
-		}
-		namespace := keys[0]
-		c := client.GetEvents(namespace)
-		wsClient := serveWs(hub, w, r)
-		for item := range c {
-			wsClient.send <- []byte(item.ToString())
-		}
+
 	})
 	logrus.Infoln("listening on", listenAddr)
 	err := http.ListenAndServe(listenAddr, nil)

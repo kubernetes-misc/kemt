@@ -1,0 +1,143 @@
+{{define "head"}}
+    <style>
+
+    </style>
+
+    <script>
+
+        const state = {}
+
+        function resolveState() {
+            let $_GET = [];
+            window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (a, name, value) {
+                $_GET[name] = value;
+            })
+            state.namespace = $_GET["namespace"]
+            state.item = $_GET["item"]
+            if (state.item === undefined) {
+                state.item = ""
+            }
+            document.getElementById("heading").innerText = state.namespace + "  " + "pod/" + state.item
+        }
+
+
+        function loadPods() {
+            const request = new XMLHttpRequest()
+            request.open('GET', document.location.origin + "/api/pods", true)
+            request.onload = function () {
+                if (request.response === "") {
+                    console.log("no pods returned...")
+                    return
+                }
+                const m = JSON.parse(request.response)
+                const table = document.getElementById("podsTable");
+                const totalRows = table.rows.length
+                for (let i = 1; i < totalRows; i++) {
+                    table.deleteRow(1)
+                }
+                let currentRow = 1
+                for (const name of m) {
+                    const row = table.insertRow(currentRow++);
+
+                    const cell1 = row.insertCell(0);
+                    const cell2 = row.insertCell(1);
+
+                    cell1.innerHTML = name;
+                    cell2.innerHTML = "<a href='/log?namespace=" + state.namespace + "&item=" + name + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
+                }
+
+            }
+            request.send()
+        }
+
+        function connectToWS() {
+            document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
+
+            //TODO: handle TLS with wss://
+            const ws = "ws://" + window.location.host + "/ws?namespace=" + state.namespace + "&type=" + state.type + "&item=" + state.item
+            state.socket = new WebSocket(ws)
+
+            logArea = document.getElementById("log")
+            logArea.innerHTML = ""
+            state.socket.onmessage = function (event) {
+                logArea.innerHTML += "<br />" + event.data
+                const objDiv = document.getElementById("log");
+                objDiv.scrollTop = objDiv.scrollHeight;
+            };
+            state.socket.onclose = function (event) {
+                if (event.wasClean) {
+                    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    // e.g. server process killed or network down
+                    // event.code is usually 1006 in this case
+                    console.log('[close] Connection died');
+                    document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-danger">DEAD</span>'
+                    console.log("retrying to connect in 5 seconds")
+                    setTimeout(() => {
+                        connectToWS()
+                    }, 5000)
+                }
+            };
+            state.socket.onerror = function (error) {
+                setTimeout(() => {
+                    connectToWS()
+                }, 5000)
+                console.log(error.message)
+            };
+            state.socket.onopen = function (e) {
+                console.log("[open] Connection established");
+                console.log("Sending to server");
+                document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-success">LIVE</span>'
+            };
+        }
+
+        function loadLogs() {
+            connectToWS()
+        }
+
+        setTimeout(() => {
+            resolveState()
+            if (state.item !== undefined && state.item !== "") {
+                document.getElementById("pods").remove()
+                loadLogs()
+
+            } else {
+                console.log("loading pods")
+                loadPods()
+
+            }
+
+        }, 100)
+    </script>
+{{end}}
+
+
+{{define "content"}}
+    <h1>Logs</h1>
+    <h2 id="heading">Logs</h2>
+    <br/>
+
+    <div id="pods">
+        <h3>Pods</h3>
+        <table id="podsTable" class="table table-hover" style="width: 380px">
+            <thead>
+            <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="table-default">
+                <td></td>
+                <td></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <p id="connectionStatus"></p>
+    <div id="log" style="height: 1000px; overflow-y: scroll; font-family: 'Lucida Console' "></div>
+
+
+{{end}}

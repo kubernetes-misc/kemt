@@ -22,8 +22,9 @@
                     const cell2 = row.insertCell(1);
 
                     cell1.innerHTML = namespace;
-                    cell2.innerHTML = "<a href='/watch?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>watch</a>" +
-                        "&nbsp;<a href='/cli?namespace=" + namespace + "' class='btn btn-sm btn-success animated swing'>cli</a>";
+                    cell2.innerHTML = "<a href='/watch?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
+                        + "&nbsp;<a href='/log?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>logs</a>"
+                        // + "&nbsp;<a href='/cli?namespace=" + namespace + "' class='btn btn-sm btn-success animated swing'>cli</a>";
                 }
 
             }
