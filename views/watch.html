@@ -1,7 +1,6 @@
 {{define "head"}}
     <style>
 
-
     </style>
 
     <script>
@@ -55,7 +54,6 @@
                     connectToWS()
                 }, 5000)
                 console.log(error.message)
-                // alert(`[error] ${error.message}`);
             };
             state.socket.onopen = function (e) {
                 console.log("[open] Connection established");
@@ -67,6 +65,7 @@
         setTimeout(() => {
             init()
         }, 500)
+
     </script>
 
 {{end}}
