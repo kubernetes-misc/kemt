@@ -5,69 +5,63 @@
     </style>
 
     <script>
-        function init() {
 
-            //Get the namespace
+        const state = {}
+
+        function init() {
+            resolveNS()
+            document.getElementById("h1").innerText = "namespace/" + state.namespace
+            connectToWS()
+        }
+
+        function resolveNS() {
             let $_GET = [];
             window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (a, name, value) {
                 $_GET[name] = value;
             })
-            const namespace = $_GET["namespace"]
+            state.namespace = $_GET["namespace"]
+        }
 
-            let socket = connectToWS()
+        function connectToWS() {
+            document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
 
-            //Set the header
-            document.getElementById("h1").innerText = namespace;
+            //TODO: handle TLS with wss://
+            const ws = "ws://" + window.location.host + "/ws?namespace=" + state.namespace
+            state.socket = new WebSocket(ws)
 
             logArea = document.getElementById("log")
-            socket.onmessage = function (event) {
+            logArea.innerHTML = ""
+            state.socket.onmessage = function (event) {
                 logArea.innerHTML += "<br />" + event.data
                 const objDiv = document.getElementById("log");
                 objDiv.scrollTop = objDiv.scrollHeight;
             };
-
-            socket.onclose = function (event) {
+            state.socket.onclose = function (event) {
                 if (event.wasClean) {
                     console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
                 } else {
                     // e.g. server process killed or network down
                     // event.code is usually 1006 in this case
                     console.log('[close] Connection died');
-                    document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-danger">dead</span>'
+                    document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-danger">DEAD</span>'
+                    console.log("retrying to connect in 5 seconds")
                     setTimeout(() => {
-                        socket = connectToWS()
+                        connectToWS()
                     }, 5000)
                 }
             };
-
-            socket.onerror = function (error) {
-                alert(`[error] ${error.message}`);
+            state.socket.onerror = function (error) {
+                setTimeout(() => {
+                    connectToWS()
+                }, 5000)
+                console.log(error.message)
+                // alert(`[error] ${error.message}`);
             };
-
-
-
-        }
-
-        function connectToWS() {
-            document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
-
-            let $_GET = [];
-            window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (a, name, value) {
-                $_GET[name] = value;
-            })
-            const namespace = $_GET["namespace"]
-
-            //TODO: handle TLS with wss://
-            const ws = "ws://" + window.location.host + "/ws?namespace=" + namespace
-            let socket = new WebSocket(ws)
-            socket.onopen = function (e) {
+            state.socket.onopen = function (e) {
                 console.log("[open] Connection established");
                 console.log("Sending to server");
                 document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-success">LIVE</span>'
             };
-            return socket
-
-
         }
 
         setTimeout(() => {
@@ -79,7 +73,7 @@
 
 
 {{define "content"}}
-    <h1 id="h1">loading...</h1>
-        <p id="connectionStatus"></p>
-    <div id="log" style="height: 1000px; overflow-y: scroll;"></div>
+    <h1 id="h1">waiting</h1>
+    <p id="connectionStatus"></p>
+    <div id="log" style="height: 1000px; overflow-y: scroll; font-family: 'Lucida Console' "></div>
 {{end}}
