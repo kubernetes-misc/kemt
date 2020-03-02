@@ -18,11 +18,16 @@ RUN mv -f views build/
 RUN ls -la /src/build
 
 
-FROM scratch as final
-COPY --from=builder /user/group /user/passwd /etc/
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-#COPY --from=builder /src/build/app /app
-#COPY --from=builder /src/views /views
+#FROM scratch as final
+#COPY --from=builder /user/group /user/passwd /etc/
+#COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+#COPY --from=builder /src/build /build
+#USER nobody:nobody
+#ENTRYPOINT ["/build/app"]
+
+
+FROM debian:stretch
+RUN mkdir -p /build
+WORKDIR /build
 COPY --from=builder /src/build /build
-USER nobody:nobody
 ENTRYPOINT ["/build/app"]
