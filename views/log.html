@@ -23,7 +23,7 @@
 
         function loadPods() {
             const request = new XMLHttpRequest()
-            request.open('GET', document.location.origin + "/api/pods", true)
+            request.open('GET', document.location.origin + "/api/pods?namespace=" + state.namespace, true)
             request.onload = function () {
                 if (request.response === "") {
                     console.log("no pods returned...")
