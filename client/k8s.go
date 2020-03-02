@@ -215,31 +215,30 @@ type InvolvedObject struct {
 	Namespace string `json:"namespace"`
 }
 
-func GetLogs(ns, item string) chan string {
-	result := make(chan string)
-	go func() {
+func GetLogs(ns, item string) (result chan string, err error, close func() error) {
+	s, err := clientset.CoreV1().Pods(ns).GetLogs(item, &v1.PodLogOptions{
+		TypeMeta: metav1.TypeMeta{},
+		Follow:   true,
+	}).Stream()
+	if err != nil {
+		logrus.Errorln(err)
+		return
+	}
 
-		s, err := clientset.CoreV1().Pods(ns).GetLogs(item, &v1.PodLogOptions{
-			TypeMeta: metav1.TypeMeta{},
-			Follow:   true,
-		}).Stream()
-		if err != nil {
-			logrus.Errorln(err)
-			close(result)
-			return
-		}
+	result = make(chan string)
+	close = func() error { return s.Close() }
+
+	go func() {
 		rd := bufio.NewReader(s)
 		for {
 			str, err := rd.ReadString('\n')
 			if err != nil {
-				logrus.Errorln("Read Error:", err)
 				return
 			}
 			result <- str
 		}
-
 	}()
-	return result
+	return
 }
 
 func GetEvents(ns string) chan Event {

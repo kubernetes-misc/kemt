@@ -59,13 +59,27 @@ func StartServer(listenAddr string) {
 
 		if handleEvents {
 			c := client.GetEvents(namespace)
-			wsClient := serveWs(hub, w, r)
+			wsClient := serveWs(hub, w, r, func() {
+				//handle clean up
+			})
 			for item := range c {
 				wsClient.send <- []byte(item.ToString())
 			}
 		} else {
-			c := client.GetLogs(namespace, item)
-			wsClient := serveWs(hub, w, r)
+			c, err, closer := client.GetLogs(namespace, item)
+			if err != nil {
+				logrus.Errorln("could not get logs")
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("internal server error"))
+				return
+			}
+			wsClient := serveWs(hub, w, r, func() {
+				if err := closer(); err != nil {
+					logrus.Errorln("could not close the Kubernetes client connection")
+					logrus.Errorln(err)
+					return
+				}
+			})
 			for item := range c {
 				wsClient.send <- []byte(item)
 			}
@@ -172,6 +186,8 @@ type Client struct {
 
 	// Buffered channel of outbound messages.
 	send chan []byte
+
+	cleanup func()
 }
 
 // readPump pumps messages from the websocket connection to the hub.
@@ -181,6 +197,14 @@ type Client struct {
 // reads from this goroutine.
 func (c *Client) readPump() {
 	defer func() {
+		c.cleanup()
+		//There might be some  number of items in their
+		go func() {
+			for range c.send {
+			}
+		}()
+		time.Sleep(1 * time.Second)
+
 		c.hub.unregister <- c
 		c.conn.Close()
 	}()
@@ -247,18 +271,23 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) *Client {
+func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request, cleanup func()) *Client {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return nil
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
-	client.hub.register <- client
+	c := &Client{
+		hub:     hub,
+		conn:    conn,
+		send:    make(chan []byte, 256),
+		cleanup: cleanup,
+	}
+	c.hub.register <- c
 
 	// Allow collection of memory referenced by the caller by doing all work in
 	// new goroutines.
-	go client.writePump()
-	go client.readPump()
-	return client
+	go c.writePump()
+	go c.readPump()
+	return c
 }
