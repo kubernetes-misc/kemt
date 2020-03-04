@@ -9,7 +9,7 @@
 
         function init() {
             resolveNS()
-            document.getElementById("h1").innerText = "namespace/" + state.namespace
+            document.getElementById("h1").innerText = "Events ns/" + state.namespace
             connectToWS()
         }
 
@@ -25,7 +25,7 @@
             document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
 
             //TODO: handle TLS with wss://
-            const ws = "ws://" + window.location.host + "/ws?namespace=" + state.namespace
+            const ws = "ws://" + window.location.host + "/kemt/ws?namespace=" + state.namespace
             state.socket = new WebSocket(ws)
 
             logArea = document.getElementById("log")

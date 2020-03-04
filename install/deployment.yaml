@@ -1,4 +1,17 @@
-# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: kemt
+spec:
+  ports:
+    - name: kemt-port
+      nodePort: 30000
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: NodePort
+  selector:
+    app: kemt
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -19,6 +32,8 @@ spec:
         - env:
             - name: authInCluster
               value: "true"
+            - name: listen
+              value: ":8080"
           image: kubernetesmisc/kemt:latest
           imagePullPolicy: Always
           name: kemt
@@ -29,3 +44,7 @@ spec:
             requests:
               cpu: 500m
               memory: 64Mi
+          ports:
+            - name: kemt-port
+              containerPort: 8080
+              protocol: TCP

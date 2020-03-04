@@ -23,7 +23,7 @@
 
         function loadPods() {
             const request = new XMLHttpRequest()
-            request.open('GET', document.location.origin + "/api/pods?namespace=" + state.namespace, true)
+            request.open('GET', document.location.origin + "/kemt/api/pods?namespace=" + state.namespace, true)
             request.onload = function () {
                 if (request.response === "") {
                     console.log("no pods returned...")
@@ -43,7 +43,7 @@
                     const cell2 = row.insertCell(1);
 
                     cell1.innerHTML = name;
-                    cell2.innerHTML = "<a href='/log?namespace=" + state.namespace + "&item=" + name + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
+                    cell2.innerHTML = "<a href='/kemt/log?namespace=" + state.namespace + "&item=" + name + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
                 }
 
             }
@@ -54,10 +54,10 @@
             document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
 
             //TODO: handle TLS with wss://
-            const ws = "ws://" + window.location.host + "/ws?namespace=" + state.namespace + "&type=" + state.type + "&item=" + state.item
+            const ws = "ws://" + window.location.host + "/kemt/ws?namespace=" + state.namespace + "&type=" + state.type + "&item=" + state.item
             state.socket = new WebSocket(ws)
 
-            logArea = document.getElementById("log")
+            const logArea = document.getElementById("log")
             logArea.innerHTML = ""
             state.socket.onmessage = function (event) {
                 logArea.innerHTML += "<br />" + event.data

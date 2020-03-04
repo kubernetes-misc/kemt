@@ -6,7 +6,8 @@
     <script>
         function loadNamespaces() {
             const request = new XMLHttpRequest()
-            request.open('GET', document.location.origin + "/api/namespaces", true)
+            const url = document.location.origin + "/kemt/api/namespaces"
+            request.open('GET', url, true)
             request.onload = function () {
                 const m = JSON.parse(request.response)
                 const table = document.getElementById("namespaceTable");
@@ -22,14 +23,15 @@
                     const cell2 = row.insertCell(1);
 
                     cell1.innerHTML = namespace;
-                    cell2.innerHTML = "<a href='/watch?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
-                        + "&nbsp;<a href='/log?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>logs</a>"
-                        // + "&nbsp;<a href='/cli?namespace=" + namespace + "' class='btn btn-sm btn-success animated swing'>cli</a>";
+                    cell2.innerHTML = "<a href='/kemt/watch?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>watch</a>"
+                        + "&nbsp;<a href='/kemt/log?namespace=" + namespace + "' class='btn btn-sm btn-primary animated swing'>logs</a>"
+                    // + "&nbsp;<a href='/cli?namespace=" + namespace + "' class='btn btn-sm btn-success animated swing'>cli</a>";
                 }
 
             }
             request.send()
         }
+
         setTimeout(() => {
             loadNamespaces()
         }, 500)

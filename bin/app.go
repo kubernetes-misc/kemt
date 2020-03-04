@@ -15,7 +15,14 @@ const DefaultCronSpec = "*/30 * * * * *"
 func main() {
 	logrus.Println("Kubernetes Declarative Teams Integration")
 	logrus.Println("Starting up...")
-	go web.StartServer(":7000")
+
+	listen := os.Getenv("listen")
+	if listen == "" {
+		listen = ":8080"
+		logrus.Println("defaulting listen to", listen)
+	}
+
+	go web.StartServer(listen)
 
 	err := client.BuildClient()
 	if err != nil {

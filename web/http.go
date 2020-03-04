@@ -14,17 +14,8 @@ import (
 
 func StartServer(listenAddr string) {
 
-	//render index use `index` without `.html` extension, that will render with master layout.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		err := goview.Render(w, http.StatusOK, "index", goview.M{})
-		if err != nil {
-			fmt.Fprintf(w, "Render index error: %v!", err)
-		}
-
-	})
-
 	//render page use `page.html` with '.html' will only file template without master layout.
-	http.HandleFunc("/watch", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/kemt/watch", func(w http.ResponseWriter, r *http.Request) {
 		err := goview.Render(w, http.StatusOK, "watch", goview.M{})
 		if err != nil {
 			fmt.Fprintf(w, "Render page.html error: %v!", err)
@@ -32,18 +23,26 @@ func StartServer(listenAddr string) {
 	})
 
 	//render page use `page.html` with '.html' will only file template without master layout.
-	http.HandleFunc("/log", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/kemt/log", func(w http.ResponseWriter, r *http.Request) {
 		err := goview.Render(w, http.StatusOK, "log", goview.M{})
 		if err != nil {
 			fmt.Fprintf(w, "Render page.html error: %v!", err)
 		}
 	})
 
-	http.HandleFunc("/api/namespaces", handleAPINamespaces)
-	http.HandleFunc("/api/deployments", handleAPIDeployments)
-	http.HandleFunc("/api/pods", handleAPIPods)
+	http.HandleFunc("/kemt/api/namespaces", handleAPINamespaces)
+	http.HandleFunc("/kemt/api/deployments", handleAPIDeployments)
+	http.HandleFunc("/kemt/api/pods", handleAPIPods)
 
-	fmt.Println("Listening and serving HTTP on :9090")
+	//render index use `index` without `.html` extension, that will render with master layout.
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		err := goview.Render(w, http.StatusOK, "index", goview.M{})
+		if err != nil {
+			fmt.Fprintf(w, "Render index error: %v!", err)
+		}
+	})
+
+	fmt.Println("Listening and serving HTTP on", listenAddr)
 
 	hub := newHub()
 	go hub.run()
@@ -51,7 +50,7 @@ func StartServer(listenAddr string) {
 	//fs := http.FileServer(http.Dir("html"))
 	//http.Handle("/", fs)
 
-	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/kemt/ws", func(w http.ResponseWriter, r *http.Request) {
 		namespace := getGetParam(r, "namespace")
 		item := getGetParam(r, "item")
 
