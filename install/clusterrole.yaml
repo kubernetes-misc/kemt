@@ -38,7 +38,7 @@ metadata:
   name: kemt-clusterrole-read-all
 rules:
   - apiGroups: ["", "extensions"]
-    resources: ["deployments", "pods", "services", "logs"]
+    resources: ["deployments", "pods", "pods/log", "services", "logs", "namespaces"]
     verbs: ["get", "list", "watch" ]
 ---
 kind: ClusterRoleBinding
