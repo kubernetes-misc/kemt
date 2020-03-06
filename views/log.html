@@ -53,8 +53,11 @@
         function connectToWS() {
             document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
 
-            //TODO: handle TLS with wss://
-            const ws = "ws://" + window.location.host + "/kemt/ws?namespace=" + state.namespace + "&type=" + state.type + "&item=" + state.item
+            let pre = "ws://"
+            if (window.location.protocol === "https:") {
+                pre = "wss://"
+            }
+            const ws = pre + window.location.host + "/kemt/ws?namespace=" + state.namespace + "&type=" + state.type + "&item=" + state.item
             state.socket = new WebSocket(ws)
 
             const logArea = document.getElementById("log")
