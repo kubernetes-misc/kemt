@@ -34,7 +34,7 @@ spec:
               value: "true"
             - name: listen
               value: ":8080"
-          image: kubernetesmisc/kemt:latest
+          image: kubernetesmisc/kemt:v0.3.0
           imagePullPolicy: Always
           name: kemt
           resources:
