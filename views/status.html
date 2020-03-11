@@ -1,0 +1,86 @@
+{{define "head"}}
+    <style>
+
+    </style>
+
+    <script>
+
+        const state = {}
+
+        function init() {
+            resolveState()
+            connectToWS()
+        }
+
+
+        function resolveState() {
+            let $_GET = [];
+            window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (a, name, value) {
+                $_GET[name] = value;
+            })
+            state.namespace = $_GET["namespace"]
+        }
+
+        function connectToWS() {
+            document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-primary">...</span>'
+
+            //TODO: handle TLS with wss://
+            let pre = "ws://"
+            if (window.location.protocol === "https:") {
+                pre = "wss://"
+            }
+            const ws = pre + window.location.host + "/kemt/ws?namespace=" + state.namespace + "&item=k8s-status"
+            state.socket = new WebSocket(ws)
+
+            let logArea = document.getElementById("log")
+            logArea.innerHTML = ""
+            state.socket.onmessage = function (event) {
+                logArea.innerHTML = event.data
+                logArea.removeAttribute("data-processed")
+                // $('#mermaid').html(node.data.graph).removeAttr('data-processed');
+                mermaid.init(undefined, logArea);
+            };
+            state.socket.onclose = function (event) {
+                if (event.wasClean) {
+                    console.log(`[close] Connection closed cleanly, code=${event.code} reason=${event.reason}`);
+                } else {
+                    // e.g. server process killed or network down
+                    // event.code is usually 1006 in this case
+                    console.log('[close] Connection died');
+                    document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-danger">DEAD</span>'
+                    console.log("retrying to connect in 5 seconds")
+                    setTimeout(() => {
+                        connectToWS()
+                    }, 5000)
+                }
+            };
+            state.socket.onerror = function (error) {
+                setTimeout(() => {
+                    connectToWS()
+                }, 5000)
+                console.log(error.message)
+            };
+            state.socket.onopen = function (e) {
+                console.log("[open] Connection established");
+                console.log("Sending to server");
+                document.getElementById("connectionStatus").innerHTML = 'Connection: <span class="badge badge-pill badge-success">LIVE</span>'
+            };
+        }
+
+        setTimeout(() => {
+            init()
+        }, 500)
+    </script>
+{{end}}
+
+
+{{define "content"}}
+    <p id="connectionStatus"></p>
+
+    <div id="log" class="mermaid">
+
+    </div>
+
+
+
+{{end}}

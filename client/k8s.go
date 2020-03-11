@@ -8,6 +8,7 @@ import (
 	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/pretty"
+	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -79,6 +80,23 @@ func GetPods(ns string) []string {
 	for _, item := range ls.Items {
 		result = append(result, item.Name)
 	}
+	return result
+}
+
+func GetDeploymentsDetail(ns string) chan v12.Deployment {
+	result := make(chan v12.Deployment)
+	go func() {
+		l, err := clientset.AppsV1().Deployments(ns).List(metav1.ListOptions{})
+		if err != nil {
+			logrus.Errorln(err)
+			close(result)
+			return
+		}
+		for _, deployment := range l.Items {
+			result <- deployment
+		}
+		close(result)
+	}()
 	return result
 }
 

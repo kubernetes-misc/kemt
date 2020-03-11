@@ -42,6 +42,14 @@ func StartServer(listenAddr string) {
 		}
 	})
 
+	//render index use `index` without `.html` extension, that will render with master layout.
+	http.HandleFunc("/kemt/status", func(w http.ResponseWriter, r *http.Request) {
+		err := goview.Render(w, http.StatusOK, "status", goview.M{})
+		if err != nil {
+			fmt.Fprintf(w, "Render index error: %v!", err)
+		}
+	})
+
 	fmt.Println("Listening and serving HTTP on", listenAddr)
 
 	hub := newHub()
@@ -54,9 +62,7 @@ func StartServer(listenAddr string) {
 		namespace := getGetParam(r, "namespace")
 		item := getGetParam(r, "item")
 
-		handleEvents := item == ""
-
-		if handleEvents {
+		if item == "" {
 			c := client.GetEvents(namespace)
 			wsClient := serveWs(hub, w, r, func() {
 				//handle clean up
@@ -64,6 +70,43 @@ func StartServer(listenAddr string) {
 			for item := range c {
 				wsClient.send <- []byte(item.ToString())
 			}
+		} else if item == "k8s-status" {
+			namespace := getGetParam(r, "namespace")
+			stop := false
+			wsClient := serveWs(hub, w, r, func() {
+				stop = true
+			})
+
+			for {
+				result := "graph TB\n\n"
+				namespaces := make(map[string]string)
+				c := client.GetDeploymentsDetail(namespace)
+				i := 0
+				for d := range c {
+					i++
+					if d.Status.Replicas == d.Status.AvailableReplicas {
+						line := fmt.Sprintf("up%v(%s %v of %v)\n", i, d.Name, d.Status.AvailableReplicas, d.Status.Replicas)
+						namespaces[d.Namespace] = namespaces[d.Namespace] + line
+					} else {
+						line := fmt.Sprintf("down(%s %v of %v)\n", d.Name, d.Status.AvailableReplicas, d.Status.Replicas)
+						line += "style down fill:#fbb,stroke:#f66,stroke-width:2px,color:#000,stroke-dasharray: 5, 5\n"
+						namespaces[d.Namespace] = namespaces[d.Namespace] + line
+					}
+
+				}
+				for ns, rows := range namespaces {
+					result += "subgraph ns-" + ns + "\n"
+					result += rows
+					result += "end\n"
+				}
+				wsClient.send <- []byte(result)
+
+				time.Sleep(30 * time.Second)
+				if stop {
+					break
+				}
+			}
+
 		} else {
 			c, err, closer := client.GetLogs(namespace, item)
 			if err != nil {
