@@ -9,6 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"log"
 	"net/http"
+	"path"
 	"time"
 )
 
@@ -48,6 +49,11 @@ func StartServer(listenAddr string) {
 		if err != nil {
 			fmt.Fprintf(w, "Render index error: %v!", err)
 		}
+	})
+
+	http.HandleFunc("/kemt/static", func(w http.ResponseWriter, r *http.Request) {
+		filename := "/build/views/static/" + path.Base(r.URL.Path)
+		http.ServeFile(w, r, filename)
 	})
 
 	fmt.Println("Listening and serving HTTP on", listenAddr)

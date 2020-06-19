@@ -30,4 +30,5 @@ FROM debian:stretch
 RUN mkdir -p /build
 WORKDIR /build
 COPY --from=builder /src/build /build
+RUN ls -laR /build/
 ENTRYPOINT ["/build/app"]
