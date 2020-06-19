@@ -35,6 +35,11 @@ func StartServer(listenAddr string) {
 	http.HandleFunc("/kemt/api/deployments", handleAPIDeployments)
 	http.HandleFunc("/kemt/api/pods", handleAPIPods)
 
+	http.HandleFunc("/kemt/static", func(w http.ResponseWriter, r *http.Request) {
+		filename := "/build/views/static/" + path.Base(r.URL.Path)
+		http.ServeFile(w, r, filename)
+	})
+
 	//render index use `index` without `.html` extension, that will render with master layout.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		err := goview.Render(w, http.StatusOK, "index", goview.M{})
@@ -49,11 +54,6 @@ func StartServer(listenAddr string) {
 		if err != nil {
 			fmt.Fprintf(w, "Render index error: %v!", err)
 		}
-	})
-
-	http.HandleFunc("/kemt/static", func(w http.ResponseWriter, r *http.Request) {
-		filename := "/build/views/static/" + path.Base(r.URL.Path)
-		http.ServeFile(w, r, filename)
 	})
 
 	fmt.Println("Listening and serving HTTP on", listenAddr)
