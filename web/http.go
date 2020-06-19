@@ -36,7 +36,9 @@ func StartServer(listenAddr string) {
 	http.HandleFunc("/kemt/api/pods", handleAPIPods)
 
 	http.HandleFunc("/kemt/static", func(w http.ResponseWriter, r *http.Request) {
+		logrus.Println(r.URL.Path)
 		filename := "/build/views/static/" + path.Base(r.URL.Path)
+		logrus.Println(filename)
 		http.ServeFile(w, r, filename)
 	})
 
