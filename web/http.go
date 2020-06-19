@@ -15,6 +15,13 @@ import (
 
 func StartServer(listenAddr string) {
 
+	http.HandleFunc("/kemt/static/", func(w http.ResponseWriter, r *http.Request) {
+		logrus.Println(r.URL.Path)
+		filename := "/build/views/static/" + path.Base(r.URL.Path)
+		logrus.Println(filename)
+		http.ServeFile(w, r, filename)
+	})
+
 	//render page use `page.html` with '.html' will only file template without master layout.
 	http.HandleFunc("/kemt/watch", func(w http.ResponseWriter, r *http.Request) {
 		err := goview.Render(w, http.StatusOK, "watch", goview.M{})
@@ -34,13 +41,6 @@ func StartServer(listenAddr string) {
 	http.HandleFunc("/kemt/api/namespaces", handleAPINamespaces)
 	http.HandleFunc("/kemt/api/deployments", handleAPIDeployments)
 	http.HandleFunc("/kemt/api/pods", handleAPIPods)
-
-	http.HandleFunc("/kemt/static", func(w http.ResponseWriter, r *http.Request) {
-		logrus.Println(r.URL.Path)
-		filename := "/build/views/static/" + path.Base(r.URL.Path)
-		logrus.Println(filename)
-		http.ServeFile(w, r, filename)
-	})
 
 	//render index use `index` without `.html` extension, that will render with master layout.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
