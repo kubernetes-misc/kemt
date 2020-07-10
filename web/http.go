@@ -109,7 +109,7 @@ func StartServer(listenAddr string) {
 				}
 				wsClient.send <- []byte(result)
 
-				time.Sleep(30 * time.Second)
+				time.Sleep(1 * time.Second)
 				if stop {
 					break
 				}
