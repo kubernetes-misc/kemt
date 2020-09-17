@@ -11,8 +11,8 @@ metadata:
   namespace: kemtk
   name: kemt-clusterrole
 rules:
-  - apiGroups: ["", "extensions", "kubernetes-misc.xyz", "apps"]
-    resources: ["events", "kemts"]
+  - apiGroups: ["", "extensions", "apps"]
+    resources: ["events"]
     verbs: ["get", "list", "watch" ]
 ---
 kind: ClusterRoleBinding

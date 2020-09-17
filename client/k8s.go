@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/kubernetes-misc/kemt/model"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/pretty"
 	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -63,11 +60,6 @@ func BuildClient() (err error) {
 		return
 	}
 	return
-}
-
-type WrappedKemtV1 struct {
-	Type string
-	Kemt model.KemtV1
 }
 
 func GetPods(ns string) []string {
@@ -126,71 +118,6 @@ func GetNS() []string {
 	sort.Strings(result)
 	return result
 
-}
-
-func WatchCRD(ns string, crd schema.GroupVersionResource) (err error, out chan WrappedKemtV1) {
-	crdClient := dynClient.Resource(crd)
-	w, err := crdClient.Namespace(ns).Watch(metav1.ListOptions{})
-	if err != nil {
-		logrus.Errorln("could not watch CRD")
-		logrus.Errorln(err)
-		return
-	}
-	out = make(chan WrappedKemtV1, 256)
-	go func() {
-		for r := range w.ResultChan() {
-			logrus.Println("New change to CRD")
-			logrus.Println(r.Type)
-			b, err := json.Marshal(r.Object)
-			if err != nil {
-				logrus.Errorln("could not marshal event.Object")
-				logrus.Errorln(err)
-				continue
-			}
-			item := &model.KemtV1{}
-			err = json.Unmarshal(b, item)
-			if err != nil {
-				logrus.Errorln("could not unmarshal event.Object into model.KemtV1")
-				logrus.Errorln(err)
-				continue
-			}
-			b, _ = json.Marshal(*item)
-			logrus.Println(string(pretty.Pretty(b)))
-			result := WrappedKemtV1{
-				Type: string(r.Type),
-				Kemt: *item,
-			}
-			out <- result
-		}
-
-	}()
-	return
-}
-
-func GetAllCRD(namespace string, crd schema.GroupVersionResource) (result []model.KemtV1, err error) {
-	logrus.Debugln("== getting CRDs ==")
-	crdClient := dynClient.Resource(crd)
-	ls, err := crdClient.Namespace(namespace).List(metav1.ListOptions{})
-	if err != nil {
-		logrus.Errorln(fmt.Errorf("could not list %s", err))
-		return
-	}
-
-	result = make([]model.KemtV1, len(ls.Items))
-	for i, entry := range ls.Items {
-		b, err := entry.MarshalJSON()
-		if err != nil {
-			logrus.Errorln(err)
-			continue
-		}
-		cs := model.KemtV1{}
-		err = json.Unmarshal(b, &cs)
-		if err != nil {
-			logrus.Errorln(err)
-		}
-		result[i] = cs
-	}
-	return
 }
 
 type Event struct {
